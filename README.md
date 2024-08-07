@@ -21,7 +21,7 @@ This is a simple implementation of the classic game Tetris using Pygame. The gam
 ## Usage
 1. Clone this repository:
    ```bash
-   git clone https://github.com/Dillon-mac/tetris
+   git clone https://github.com/Dillon-mac/tetris.git
 2. Run the game:
    ```bash
    python tetris.py
