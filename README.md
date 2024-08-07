@@ -32,6 +32,6 @@ This is a simple implementation of the classic game Tetris using Pygame. The gam
   **Down Arrow**: Speed up pieces fall   
   **Up Arrow**: Rotate piece   
 
-## Screenshots
+## Screenshot
 
 ![Tetris](https://github.com/user-attachments/assets/1564ae52-0bef-4021-8bfe-109f841fd3b6)
