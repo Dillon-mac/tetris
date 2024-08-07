@@ -5,26 +5,16 @@ import random
 pygame.init()
 
 # Screen dimensions
-SCREEN_WIDTH = 300
-SCREEN_HEIGHT = 600
-GRID_SIZE = 30
-GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
-GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
+WIDTH, HEIGHT = 800, 800  # Full window dimensions
+PLAY_WIDTH, PLAY_HEIGHT = 300, 600  # Dimensions of the game area
+BLOCK_SIZE = 30  # Size of each block in pixels
 
-# Colors
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-CYAN = (0, 255, 255)
-MAGENTA = (255, 0, 255)
-YELLOW = (255, 255, 0)
-ORANGE = (255, 165, 0)
+# Top left coordinates of the play area
+TOP_LEFT_X = (WIDTH - PLAY_WIDTH) // 2
+TOP_LEFT_Y = HEIGHT - PLAY_HEIGHT - 50  # Ensuring space for the title
 
-# Shapes - Each shape is a list of strings representing its rotations
-SHAPES = [
-    [['.....',
+# Define the shapes and their colors
+S = [['.....',
       '.....',
       '..00.',
       '.00..',
@@ -33,9 +23,9 @@ SHAPES = [
       '..0..',
       '..00.',
       '...0.',
-      '.....']],
+      '.....']]
 
-    [['.....',
+Z = [['.....',
       '.....',
       '.00..',
       '..00.',
@@ -44,9 +34,9 @@ SHAPES = [
       '..0..',
       '.00..',
       '.0...',
-      '.....']],
+      '.....']]
 
-    [['.....',
+I = [['.....',
       '..0..',
       '..0..',
       '..0..',
@@ -55,39 +45,18 @@ SHAPES = [
       '0000.',
       '.....',
       '.....',
-      '.....']],
+      '.....']]
 
-    [['.....',
+O = [['.....',
       '.....',
       '.00..',
       '.00..',
-      '.....']],
+      '.....']]
 
-    [['.....',
-      '.....',
-      '..0..',
-      '.000.',
-      '.....'],
-     ['.....',
-      '..0..',
-      '..00.',
-      '..0..',
-      '.....'],
-     ['.....',
-      '.....',
-      '.000.',
-      '..0..',
-      '.....'],
-     ['.....',
-      '..0..',
-      '.00..',
-      '..0..',
-      '.....']],
-
-    [['.....',
-      '.....',
+J = [['.....',
       '.0...',
       '.000.',
+      '.....',
       '.....'],
      ['.....',
       '..00.',
@@ -103,12 +72,12 @@ SHAPES = [
       '..0..',
       '..0..',
       '.00..',
-      '.....']],
+      '.....']]
 
-    [['.....',
-      '.....',
+L = [['.....',
       '...0.',
       '.000.',
+      '.....',
       '.....'],
      ['.....',
       '..0..',
@@ -121,40 +90,38 @@ SHAPES = [
       '.0...',
       '.....'],
      ['.....',
-      '..00.',
+      '.00..',
       '..0..',
       '..0..',
       '.....']]
-]
 
-# Shape colors
-SHAPE_COLORS = [CYAN, MAGENTA, ORANGE, BLUE, YELLOW, GREEN, RED]
+T = [['.....',
+      '..0..',
+      '.000.',
+      '.....',
+      '.....'],
+     ['.....',
+      '..0..',
+      '..00.',
+      '..0..',
+      '.....'],
+     ['.....',
+      '.....',
+      '.000.',
+      '..0..',
+      '.....'],
+     ['.....',
+      '..0..',
+      '.00..',
+      '..0..',
+      '.....']]
 
-# Initialize screen
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Tetris")
+# List of shapes and their colors
+SHAPES = [S, Z, I, O, J, L, T]
+SHAPE_COLORS = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (128, 0, 128)]
 
-# Clock
-clock = pygame.time.Clock()
-
-def create_grid(locked_positions={}):
-    """Creates a grid of the game with locked positions filled"""
-    grid = [[BLACK for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
-    for y in range(GRID_HEIGHT):
-        for x in range(GRID_WIDTH):
-            if (x, y) in locked_positions:
-                grid[y][x] = locked_positions[(x, y)]
-    return grid
-
-def draw_grid(surface, grid):
-    """Draws the grid on the screen"""
-    for y in range(GRID_HEIGHT):
-        for x in range(GRID_WIDTH):
-            pygame.draw.rect(surface, grid[y][x], (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE), 0)
-            pygame.draw.rect(surface, WHITE, (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE), 1)
-
+# Define Piece class
 class Piece:
-    """Class representing a Tetris piece"""
     def __init__(self, x, y, shape):
         self.x = x
         self.y = y
@@ -162,73 +129,110 @@ class Piece:
         self.color = SHAPE_COLORS[SHAPES.index(shape)]
         self.rotation = 0
 
-    def rotate(self):
-        """Rotate the piece to the next rotation"""
-        self.rotation = (self.rotation + 1) % len(self.shape)
+# Create a grid for the game area
+def create_grid(locked_positions={}):
+    grid = [[(0,0,0) for x in range(10)] for y in range(20)]  # Empty grid
+    for y in range(len(grid)):
+        for x in range(len(grid[y])):
+            if (x, y) in locked_positions:
+                color = locked_positions[(x, y)]
+                grid[y][x] = color
+    return grid
 
-    def current_shape(self):
-        """Returns the current rotation of the piece"""
-        return self.shape[self.rotation]
+# Convert shape format to grid coordinates
+def convert_shape_format(piece):
+    positions = []
+    format = piece.shape[piece.rotation % len(piece.shape)]
+    for i, line in enumerate(format):
+        row = list(line)
+        for j, column in enumerate(row):
+            if column == '0':
+                positions.append((piece.x + j, piece.y + i))
+    for i, pos in enumerate(positions):
+        positions[i] = (pos[0] - 2, pos[1] - 4)
+    return positions
 
-def get_new_piece():
-    """Generates a new random piece"""
-    return Piece(GRID_WIDTH // 2 - 2, 0, random.choice(SHAPES))
-
-def draw_piece(surface, piece):
-    """Draws the current piece on the screen"""
-    shape = piece.current_shape()
-    for y, line in enumerate(shape):
-        for x, cell in enumerate(line):
-            if cell == '0':
-                pygame.draw.rect(surface, piece.color, ((piece.x + x) * GRID_SIZE, (piece.y + y) * GRID_SIZE, GRID_SIZE, GRID_SIZE), 0)
-
+# Check if the piece fits in the grid
 def valid_space(piece, grid):
-    """Checks if the piece can be placed at its current position"""
-    accepted_positions = [[(j, i) for j in range(GRID_WIDTH) if grid[i][j] == BLACK] for i in range(GRID_HEIGHT)]
-    accepted_positions = [j for sub in accepted_positions for j in sub]
+    accepted_positions = [[(x, y) for x in range(10) if grid[y][x] == (0, 0, 0)] for y in range(20)]
+    accepted_positions = [x for item in accepted_positions for x in item]
     formatted = convert_shape_format(piece)
     for pos in formatted:
         if pos not in accepted_positions:
-            if pos[1] >= 0:
+            if pos[1] > -1:
                 return False
     return True
 
-def convert_shape_format(piece):
-    """Converts the shape format into grid positions"""
-    positions = []
-    shape = piece.current_shape()
-    for y, line in enumerate(shape):
-        row = list(line)
-        for x, cell in enumerate(row):
-            if cell == '0':
-                positions.append((piece.x + x, piece.y + y))
-    for i, pos in enumerate(positions):
-        positions[i] = (pos[0], pos[1])
-    return positions
+# Check if the game is lost
+def check_lost(positions):
+    for pos in positions:
+        x, y = pos
+        if y < 1:
+            return True
+    return False
 
-def clear_rows(grid, locked_positions):
-    """Clears filled rows and updates the locked positions"""
+# Generate a new piece
+def get_new_piece():
+    return Piece(5, 0, random.choice(SHAPES))
+
+# Draw grid lines on the game area
+def draw_grid(surface, grid):
+    for y in range(len(grid)):
+        pygame.draw.line(surface, (128, 128, 128), (TOP_LEFT_X, TOP_LEFT_Y + y * BLOCK_SIZE), (TOP_LEFT_X + PLAY_WIDTH, TOP_LEFT_Y + y * BLOCK_SIZE))
+        for x in range(len(grid[y])):
+            pygame.draw.line(surface, (128, 128, 128), (TOP_LEFT_X + x * BLOCK_SIZE, TOP_LEFT_Y), (TOP_LEFT_X + x * BLOCK_SIZE, TOP_LEFT_Y + PLAY_HEIGHT))
+
+# Clear full rows and move down the remaining rows
+def clear_rows(grid, locked):
     increment = 0
-    for y in range(GRID_HEIGHT - 1, -1, -1):
+    for y in range(len(grid) - 1, -1, -1):
         row = grid[y]
-        if BLACK not in row:
+        if (0, 0, 0) not in row:
             increment += 1
-            for x in range(GRID_WIDTH):
+            index = y
+            for x in range(len(row)):
                 try:
-                    del locked_positions[(x, y)]
-                except KeyError:
+                    del locked[(x, y)]
+                except:
                     continue
     if increment > 0:
-        for key in sorted(list(locked_positions), key=lambda k: k[1])[::-1]:
+        for key in sorted(list(locked), key=lambda k: k[1])[::-1]:
             x, y = key
-            if y < y + increment:
+            if y < index:
                 new_key = (x, y + increment)
-                locked_positions[new_key] = locked_positions.pop(key)
+                locked[new_key] = locked.pop(key)
     return increment
 
+# Draw the next shape preview
+def draw_next_shape(shape, surface):
+    font = pygame.font.SysFont('comic sans ms', 30)
+    label = font.render('Next Shape', 1, (255, 255, 255))
+    start_x = TOP_LEFT_X + PLAY_WIDTH + 50
+    start_y = TOP_LEFT_Y + (PLAY_HEIGHT // 2 - 100)
+    format = shape.shape[shape.rotation % len(shape.shape)]
+    for i, line in enumerate(format):
+        row = list(line)
+        for j, column in enumerate(row):
+            if column == '0':
+                pygame.draw.rect(surface, shape.color, (start_x + j * BLOCK_SIZE, start_y + i * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 0)
+    surface.blit(label, (start_x + 10, start_y - 30))
+
+# Draw the game window
+def draw_window(surface, grid, score=0):
+    surface.fill((0, 0, 0))  # Fill background with black
+    pygame.font.init()
+    font = pygame.font.SysFont('comic sans ms', 60)
+    label = font.render('Tetris', 1, (255, 255, 255))  # Title
+    surface.blit(label, (TOP_LEFT_X + PLAY_WIDTH / 2 - (label.get_width() / 2), 10))  # Position title at the top
+    for y in range(len(grid)):
+        for x in range(len(grid[y])):
+            pygame.draw.rect(surface, grid[y][x], (TOP_LEFT_X + x * BLOCK_SIZE, TOP_LEFT_Y + y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), 0)
+    draw_grid(surface, grid)
+    pygame.draw.rect(surface, (0, 255, 255), (TOP_LEFT_X - 5, TOP_LEFT_Y - 5, PLAY_WIDTH + 10, PLAY_HEIGHT + 10), 5)  # Cyan border
+
+# Main game loop
 def main():
-    """Main game loop"""
-    locked_positions = {}  # Positions of locked pieces
+    locked_positions = {}
     grid = create_grid(locked_positions)
     change_piece = False
     run = True
@@ -240,25 +244,21 @@ def main():
     while run:
         grid = create_grid(locked_positions)
         fall_speed = 0.27
-
         fall_time += clock.get_rawtime()
         clock.tick()
-
-        # Handle falling pieces
+        
         if fall_time / 1000 >= fall_speed:
             fall_time = 0
             current_piece.y += 1
-            if not valid_space(current_piece, grid) and current_piece.y > 0:
+            if not (valid_space(current_piece, grid)) and current_piece.y > 0:
                 current_piece.y -= 1
                 change_piece = True
-
-        # Handle user input
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.display.quit()
                 quit()
-
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     current_piece.x -= 1
@@ -273,33 +273,59 @@ def main():
                     if not valid_space(current_piece, grid):
                         current_piece.y -= 1
                 if event.key == pygame.K_UP:
-                    current_piece.rotate()
+                    current_piece.rotation = (current_piece.rotation + 1) % len(current_piece.shape)
                     if not valid_space(current_piece, grid):
-                        current_piece.rotate()
-                        current_piece.rotate()
-                        current_piece.rotate()
-
-        # Update grid with current piece position
+                        current_piece.rotation = (current_piece.rotation - 1) % len(current_piece.shape)
+        
         shape_pos = convert_shape_format(current_piece)
-        for x, y in shape_pos:
-            if y >= 0:
+        
+        for i in range(len(shape_pos)):
+            x, y = shape_pos[i]
+            if y > -1:
                 grid[y][x] = current_piece.color
-
-        # Lock piece and generate new piece if needed
+        
         if change_piece:
-            for x, y in shape_pos:
-                locked_positions[(x, y)] = current_piece.color
+            for pos in shape_pos:
+                p = (pos[0], pos[1])
+                locked_positions[p] = current_piece.color
             current_piece = next_piece
             next_piece = get_new_piece()
             change_piece = False
             clear_rows(grid, locked_positions)
-
-        # Draw everything
-        draw_grid(screen, grid)
-        draw_piece(screen, current_piece)
+        
+        draw_window(win, grid)
+        draw_next_shape(next_piece, win)
         pygame.display.update()
+        
+        if check_lost(locked_positions):
+            run = False
+    
+    draw_text_middle("Game Over", 80, (255, 255, 255), win)
+    pygame.display.update()
+    pygame.time.delay(2000)
 
+# Initialize the Pygame window and main menu
+def main_menu():
+    global win
+    win = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption('Tetris')
+    run = True
+    while run:
+        win.fill((0, 0, 0))
+        draw_text_middle('Press Any Key To Play', 60, (255, 255, 255), win)
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.KEYDOWN:
+                main()
     pygame.display.quit()
 
-if __name__ == "__main__":
-    main()
+# Draw text in the middle of the screen
+def draw_text_middle(text, size, color, surface):
+    font = pygame.font.SysFont('comic sans ms', size, bold=True)
+    label = font.render(text, 1, color)
+    surface.blit(label, (TOP_LEFT_X + PLAY_WIDTH / 2 - (label.get_width() / 2), TOP_LEFT_Y + PLAY_HEIGHT / 2 - (label.get_height() / 2)))
+
+# Start the game with the main menu
+main_menu()
